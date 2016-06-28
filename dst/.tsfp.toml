@@ -1,0 +1,7 @@
+port = 4040
+static = "./"
+[servers]
+    [servers.baidu]
+    pattern = "/api/*"
+    addr = "http://www.baidu.com"
+    init = "http://www.baidu.com"
