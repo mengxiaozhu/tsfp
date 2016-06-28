@@ -1,0 +1,11 @@
+port = 4040
+static = "./"
+[servers]
+    [servers.go]
+    pattern = "/api/*"
+    addr = "http://localhost:8080"
+    init = "http://localhost:8080/api/v3/edu/lesson?wx=10479"
+    [servers.php]
+    pattern = "/*"
+    addr = "http://wechat.mengxiaozhu.cn"
+    init = "http://wechat.mengxiaozhu.cn/MuniNg/h5_load_config?wx=10479"
