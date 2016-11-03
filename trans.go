@@ -1,19 +1,24 @@
 package tsfp
 
 import (
-	"gopkg.in/macaron.v1"
-	"net/http"
-	"io"
-	"net/url"
 	"bytes"
+	"gopkg.in/macaron.v1"
+	"io"
+	"net/http"
 	"net/http/cookiejar"
+	"net/url"
+	"sync"
 	"time"
 )
 
 var CookieJar *cookiejar.Jar
 var HttpClient *http.Client
 
+var lock *sync.Mutex
+
 func Trans(ctx *macaron.Context, addr *url.URL) {
+	lock.Lock()
+	defer lock.Unlock()
 
 	var resp *http.Response
 	var err error
@@ -43,22 +48,13 @@ func Trans(ctx *macaron.Context, addr *url.URL) {
 
 func KeepSession(server *Server) {
 	for {
+		lock.Lock()
 		if server.Init != "" {
 			HttpClient.Get(server.Init)
 		}
+		lock.Unlock()
 		time.Sleep(3 * time.Second)
 	}
-}
-
-func RegisterRoute(server *Server, m *macaron.Macaron) {
-	addrURL, err := url.Parse(server.Addr)
-	if err != nil {
-		return
-	}
-
-	m.Any(server.Pattern, func(ctx *macaron.Context) {
-		Trans(ctx, addrURL)
-	})
 }
 
 func NewProxy(conf *Config) {
@@ -73,6 +69,7 @@ func NewProxy(conf *Config) {
 	HttpClient = &http.Client{
 		Jar: CookieJar,
 	}
+	lock = &sync.Mutex{}
 
 	// 保持会话
 	for _, server := range conf.Servers {
@@ -86,4 +83,15 @@ func NewProxy(conf *Config) {
 
 	// 启动代理
 	m.Run(conf.Port)
+}
+
+func RegisterRoute(server *Server, m *macaron.Macaron) {
+	addrURL, err := url.Parse(server.Addr)
+	if err != nil {
+		return
+	}
+
+	m.Any(server.Pattern, func(ctx *macaron.Context) {
+		Trans(ctx, addrURL)
+	})
 }
